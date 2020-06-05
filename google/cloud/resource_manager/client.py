@@ -20,8 +20,9 @@ import google.api_core.client_options
 from google.api_core import page_iterator
 from google.cloud.client import Client as BaseClient
 
-from google.cloud.resource_manager._http import Connection
+from google.cloud.resource_manager._http import Connection, ConnectionV2
 from google.cloud.resource_manager.project import Project
+from google.cloud.resource_manager.folder import Folder
 
 
 class Client(BaseClient):
@@ -82,8 +83,9 @@ class Client(BaseClient):
                 kw_args["api_endpoint"] = api_endpoint
 
         self._connection = Connection(self, **kw_args)
+        self._connection_v2 = ConnectionV2(self, **kw_args)
 
-    def new_project(self, project_id, name=None, labels=None):
+    def new_project(self, project_id, parent, name=None, labels=None):
         """Create a project bound to the current client.
 
         Use :meth:`Project.reload() \
@@ -107,9 +109,39 @@ class Client(BaseClient):
         :rtype: :class:`~google.cloud.resource_manager.project.Project`
         :returns: A new instance of a
                   :class:`~google.cloud.resource_manager.project.Project`
+                  :class:`~google.cloud.resource_manager.project.Project`
                   **without** any metadata loaded.
         """
-        return Project(project_id=project_id, client=self, name=name, labels=labels)
+        return Project(project_id=project_id, parent=parent, client=self, name=name, labels=labels)
+
+    def new_folder(self, parent, display_name=None):
+        """Create a folder bound to the current client.
+
+        Use :meth:`Folder.reload() \
+        <google.cloud.resource_manager.folder.Folder.reload>` to retrieve
+        folder metadata after creating a
+        :class:`~google.cloud.resource_manager.folder.Folder` instance.
+
+        .. note:
+
+            This does not make an API call.
+
+        :type folder_id: str
+        :param folder_id: The ID for this project.
+
+        :type name: str
+        :param name: The display name of the folder.
+
+        :type labels: dict
+        :param labels: A list of labels associated with the folder.
+
+        :rtype: :class:`~google.cloud.resource_manager.folder.Folder`
+        :returns: A new instance of a
+                  :class:`~google.cloud.resource_manager.folder.Folder`
+                  :class:`~google.cloud.resource_manager.folder.Folder`
+                  **without** any metadata loaded.
+        """
+        return Folder(client=self, parent=parent, display_name=display_name)
 
     def fetch_project(self, project_id):
         """Fetch an existing project and it's relevant metadata by ID.
@@ -129,6 +161,59 @@ class Client(BaseClient):
         project = self.new_project(project_id)
         project.reload()
         return project
+
+    def fetch_folder(self, folder_id):
+        """Fetch an existing project and it's relevant metadata by ID.
+
+        .. note::
+
+            If the project does not exist, this will raise a
+            :class:`NotFound <google.cloud.exceptions.NotFound>` error.
+
+        :type project_id: str
+        :param project_id: The ID for this project.
+
+        :rtype: :class:`~google.cloud.resource_manager.project.Project`
+        :returns: A :class:`~google.cloud.resource_manager.project.Project`
+                  with metadata fetched from the API.
+        """
+        print(folder_id)
+        folder = self.new_folder(folder_id)
+        folder.reload()
+        return folder
+
+
+
+    def list_folders(self, parent, page_size=None):
+
+        extra_params = {"parent":parent}
+
+        if page_size is not None:
+            extra_params["pageSize"] = page_size
+
+
+        return page_iterator.HTTPIterator(
+            client=self,
+            api_request=self._connection_v2.api_request,
+            path="/folders",
+            item_to_value=_item_to_folder,
+            items_key="folders",
+            extra_params=extra_params,
+        )
+
+    def get_iam_folder(self, resource):
+
+        extra_params=[""]
+
+        return page_iterator.HTTPIterator(
+            client=self,
+            api_request=self._connection_v2.api_request,
+            path="/folders",
+            item_to_value=_item_to_folder,
+            items_key="folders",
+            extra_params=extra_params,
+        )
+
 
     def list_projects(self, filter_params=None, page_size=None):
         """List the projects visible to this client.
@@ -203,6 +288,66 @@ class Client(BaseClient):
             extra_params=extra_params,
         )
 
+    def get_folder(self, name):
+        """Create a folder bound to the current client.
+
+        Use :meth:`Folder.reload() \
+        <google.cloud.resource_manager.folder.Folder.reload>` to retrieve
+        folder metadata after creating a
+        :class:`~google.cloud.resource_manager.folder.Folder` instance.
+
+        .. note:
+
+            This does not make an API call.
+
+        :type folder_id: str
+        :param folder_id: The ID for this project.
+
+        :type name: str
+        :param name: The display name of the folder.
+
+        :type labels: dict
+        :param labels: A list of labels associated with the folder.
+
+        :rtype: :class:`~google.cloud.resource_manager.folder.Folder`
+        :returns: A new instance of a
+                  :class:`~google.cloud.resource_manager.folder.Folder`
+                  :class:`~google.cloud.resource_manager.folder.Folder`
+                  **without** any metadata loaded.
+        """
+        return Folder(client=self).get_folder(name=name)
+
+    def get_folder(self, name):
+        """Create a folder bound to the current client.
+
+        Use :meth:`Folder.reload() \
+        <google.cloud.resource_manager.folder.Folder.reload>` to retrieve
+        folder metadata after creating a
+        :class:`~google.cloud.resource_manager.folder.Folder` instance.
+
+        .. note:
+
+            This does not make an API call.
+
+        :type folder_id: str
+        :param folder_id: The ID for this project.
+
+        :type name: str
+        :param name: The display name of the folder.
+
+        :type labels: dict
+        :param labels: A list of labels associated with the folder.
+
+        :rtype: :class:`~google.cloud.resource_manager.folder.Folder`
+        :returns: A new instance of a
+                  :class:`~google.cloud.resource_manager.folder.Folder`
+                  :class:`~google.cloud.resource_manager.folder.Folder`
+                  **without** any metadata loaded.
+        """
+        return Folder(client=self).get_iam_folder(name=name)
+
+
+
 
 def _item_to_project(iterator, resource):
     """Convert a JSON project to the native object.
@@ -217,3 +362,18 @@ def _item_to_project(iterator, resource):
     :returns: The next project in the page.
     """
     return Project.from_api_repr(resource, client=iterator.client)
+
+
+def _item_to_folder(iterator, resource):
+    """Convert a JSON folder to the native object.
+
+    :type iterator: :class:`~google.api_core.page_iterator.Iterator`
+    :param iterator: The iterator that has retrieved the item.
+
+    :type resource: dict
+    :param resource: A resource to be converted to a folder.
+
+    :rtype: :class:`.Folder`
+    :returns: The next folder in the page.
+    """
+    return Folder.from_api_repr(resource, client=iterator.client)

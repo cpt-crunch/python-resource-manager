@@ -47,3 +47,9 @@ class Connection(_http.JSONConnection):
 
     API_URL_TEMPLATE = "{api_base_url}/{api_version}{path}"
     """A template for the URL of a particular API call."""
+
+class ConnectionV2(Connection):
+    API_VERSION = "v2"
+
+class connectionV1(Connection):
+    API_VERSION = "v1"

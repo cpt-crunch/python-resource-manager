@@ -52,14 +52,14 @@ class Project(object):
     :param labels: A list of labels associated with the project.
     """
 
-    def __init__(self, project_id, client, name=None, labels=None):
+    def __init__(self, project_id, client, name=None, labels=None, parent=None):
         self._client = client
         self.project_id = project_id
         self.name = name
         self.number = None
         self.labels = labels or {}
         self.status = None
-        self.parent = None
+        self.parent = parent
 
     def __repr__(self):
         return "<Project: %r (%r)>" % (self.name, self.project_id)
@@ -129,12 +129,14 @@ class Project(object):
                        the client stored on the current project.
         """
         client = self._require_client(client)
+        parenti = self.parent #{"id":"703749430628", "type":"folder"}
 
-        data = {"projectId": self.project_id, "name": self.name, "labels": self.labels}
+        data = {"projectId": self.project_id, "name": self.name, "labels": self.labels, "parent": parenti}
         resp = client._connection.api_request(
             method="POST", path="/projects", data=data
         )
         self.set_properties_from_api_repr(resource=resp)
+        return resp
 
     def reload(self, client=None):
         """API call:  reload the project via a ``GET`` request.

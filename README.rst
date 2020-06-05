@@ -3,15 +3,25 @@ Python Client for Google Cloud Resource Manager
 
 |alpha| |pypi| |versions| 
 
-`Google Cloud Resource Manager`_ API provides methods that you can use
+Custom Fork of the `Google Cloud Resource Manager`_ API which provides methods that you can use
 to programmatically manage your projects in the Google Cloud Platform.
 With this API, you can do the following:
+
+By default (On the official repo) :
 
 - Get a list of all projects associated with an account
 - Create new projects
 - Update existing projects
 - Delete projects
 - Undelete, or recover, projects that you don't want to delete
+
+Customized by me :
+
+- Create folder (API V2)
+- Get a list of folder (API V2)
+- Get a folder(API V2)
+- Custom return on the method -> create project (return resp of the API V1.beta)
+
 
 - `Client Library Documentation`_
 - `Product Documentation`_
